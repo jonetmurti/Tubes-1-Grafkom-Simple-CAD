@@ -101,7 +101,7 @@ function main() {
             )
         } else if (buttonState === 'square-button') {
             // add square
-        } else if (buttonState === 'polygon') {
+        } else if (buttonState === 'polygon-button') {
             // add polygon
         }
 
@@ -110,6 +110,8 @@ function main() {
             buttonState = 'none';
         }
     });
+
+    requestAnimationFrame(render);
 
     function drawObject(object, program) {
         var buf = gl.createBuffer();
@@ -130,7 +132,7 @@ function main() {
         gl.drawArrays(object.mode, 0, object.vertices.length/2);
     }
 
-    var render = function() {
+    function render() {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         gl.useProgram(program);
         for (object of objects) {
@@ -138,7 +140,6 @@ function main() {
         }
         requestAnimationFrame(render);
     };
-    requestAnimationFrame(render);
 }
 
 main();
