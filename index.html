@@ -6,15 +6,25 @@
     <title>Simple CAD</title>
 </head>
 <body>
-    <canvas id="cad-canvas">
+    <canvas id="cad-canvas" style="border: 2px solid black;">
         Your browser does not support webgl
     </canvas>
     <div style="margin-top: 10px;">
         <button id="line-button">Line</button>
         <button id="square-button">Square</button>
         <button id="polygon-button">Polygon</button>
+        <select name="color" id='color' onchange="changeColor()">
+            <option hidden selected value="">Color</option>
+            <option value="red">Red</option>
+            <option value="green">Green</option>
+            <option value="blue">Blue</option>
+            <option value="cyan">Cyan</option>
+            <option value="yellow">Yellow</option>
+            <option value="magenta">Magenta</option>
+        </select>
+        <button type="button" id="import">Import</button>
+        <button type="button" id="export">Export</button>
     </div>
-
     <script type="text/javascript" src="main.js"></script>
 </body>
 </html>

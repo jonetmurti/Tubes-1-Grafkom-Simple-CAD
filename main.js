@@ -1,3 +1,27 @@
+var currColor = [1.0, 0.0, 0.0, 1.0];
+
+function changeColor() {
+    var temp = document.getElementById('color').value;
+    if (temp === 'red') {
+        currColor = [1.0, 0.0, 0.0, 1.0];
+    }
+    else if (temp === 'green') {
+        currColor = [0.0, 1.0, 0.0, 1.0];
+    }
+    else if (temp === 'blue') {
+        currColor = [0.0, 0.0, 1.0, 1.0];
+    }
+    if (temp === 'magenta') {
+        currColor = [1.0, 0.0, 1.0, 1.0];
+    }
+    else if (temp === 'cyan') {
+        currColor = [0.0, 1.0, 1.0, 1.0];
+    }
+    else if (temp === 'yellow') {
+        currColor = [1.0, 1.0, 0.0, 1.0];
+    }
+}
+
 function main() {
     var objects = [];
 
@@ -32,7 +56,7 @@ function main() {
         return;
     }
 
-    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clearColor(1.0, 1.0, 1.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     // TODO : load, compile, and link shaders
@@ -45,9 +69,10 @@ function main() {
     }`;
 
     var fragSrc = `precision mediump float;
-
+  
+    uniform vec4 u_fragColor;
     void main() {
-        gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+        gl_FragColor = u_fragColor;
     }`;
 
     var vertShader = gl.createShader(gl.VERTEX_SHADER);
@@ -96,11 +121,25 @@ function main() {
                         xCoor, yCoor,
                         xCoor + 0.25, yCoor
                     ],
-                    mode: gl.LINES
+                    mode: gl.LINES,
+                    color: currColor
                 }
             )
         } else if (buttonState === 'square-button') {
-            // add square
+            objects.push(
+                {
+                    vertices: [
+                        xCoor, yCoor,
+                        xCoor + 0.25, yCoor,
+                        xCoor + 0.25, yCoor - 0.25,
+                        xCoor, yCoor,
+                        xCoor + 0.25, yCoor - 0.25,
+                        xCoor, yCoor - 0.25
+                    ],
+                    mode: gl.TRIANGLES,
+                    color: currColor
+                }
+            )
         } else if (buttonState === 'polygon-button') {
             // add polygon
         }
@@ -128,6 +167,9 @@ function main() {
             2 * Float32Array.BYTES_PER_ELEMENT,
             0
         );
+        
+        var uniformCol = gl.getUniformLocation(program, 'u_fragColor')
+        gl.uniform4fv(uniformCol, object.color);
         gl.enableVertexAttribArray(pos);
         gl.drawArrays(object.mode, 0, object.vertices.length/2);
     }
