@@ -24,6 +24,8 @@ function changeColor() {
 
 function main() {
     var objects = [];
+    var coordList = [];
+    var done = false;
 
     var buttonIds = [
         'line-button',
@@ -43,6 +45,69 @@ function main() {
             buttonState = id;
         });
     });
+
+    function euclideanDistance(p1, p2) {
+        return Math.sqrt(Math.pow((p1.x - p2.x), 2) + Math.pow((p1.y - p2.y), 2));
+    }
+
+    function getVertexDegree(v1, v2, v3) {
+        // MAIN VERTEX : V2
+        var v12 = Math.sqrt((Math.pow((v2.x - v1.x), 2)) + (Math.pow((v2.y - v1.y), 2)));
+        var v23 = Math.sqrt((Math.pow((v2.x - v3.x), 2)) + (Math.pow((v2.y - v3.y), 2)));
+        var v13 = Math.sqrt((Math.pow((v3.x - v1.x), 2)) + (Math.pow((v3.y - v1.y), 2)));
+        var temp = Math.acos((v23 * v23 + v12 * v12 - v13 * v13) / (2 * v23 * v12));
+        return temp * 180 / Math.PI;
+    }
+
+    function triangulizePolygon(coordList) {
+        var i, temp, j;
+        var len = coordList.length;
+        var degreeList = [];
+        var vertexResult = [];
+        for (i = 0; i < len; i++) {
+            temp = getVertexDegree(coordList[(i - 1 + len) % len], coordList[i], coordList[(i + 1) % len]);
+            degreeList.push({coord: coordList[i], fstneigh: coordList[(i - 1 + len) % len], secneigh: coordList[(i + 1) % len], degree: temp});
+        }
+        while (degreeList.length >= 3) {
+            degreeList.sort(function(it1, it2) {return ((it1.degree > it2.degree) ? -1 : ((it1.degree == it2.degree) ? 0 : 1))});
+            if (degreeList.length == 3) {
+                vertexResult.push(degreeList[0].coord.x, degreeList[0].coord.y, degreeList[1].coord.x, degreeList[1].coord.y, degreeList[2].coord.x, degreeList[2].coord.y);
+                return vertexResult;
+            }
+            else {
+                temp = degreeList[degreeList.length - 1];
+                vertexResult.push(temp.fstneigh.x, temp.fstneigh.y, temp.coord.x, temp.coord.y, temp.secneigh.x, temp.secneigh.y);
+                temp = degreeList.pop();
+                for (i = 0; i < coordList.length; i++) {
+                    if (coordList[i].x == temp.coord.x && coordList[i].y == temp.coord.y) {
+                        coordList.splice(i, 1);
+                    }
+                }
+                for (i = 0; i < coordList.length; i++) {
+                    if (coordList[i].x == temp.fstneigh.x && coordList[i].y == temp.fstneigh.y) {
+                        for (j = 0; j < degreeList.length; j++) {
+                            if (degreeList[j].coord.x == temp.fstneigh.x && degreeList[j].coord.y == temp.fstneigh.y) {
+                                degreeList[j].fstneigh = coordList[(i - 1 + len) % len];
+                                degreeList[j].secneigh = coordList[(i + 1) % len];
+                                degreeList[j].degree = getVertexDegree(degreeList[j].fstneigh, degreeList[j].coord, degreeList[j].secneigh);
+                                break;
+                            }
+                        }
+                    }
+                    else if (coordList[i].x == temp.secneigh.x && coordList[i].y == temp.secneigh.y) {
+                        for (j = 0; j < degreeList.length; j++) {
+                            if (degreeList[j].coord.x == temp.secneigh.x && degreeList[j].coord.y == temp.secneigh.y) {
+                                degreeList[j].fstneigh = coordList[(i - 1 + len) % len];
+                                degreeList[j].secneigh = coordList[(i + 1) % len];
+                                degreeList[j].degree = getVertexDegree(degreeList[j].fstneigh, degreeList[j].coord, degreeList[j].secneigh);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     var canvas = document.getElementById('cad-canvas');
 
@@ -141,7 +206,27 @@ function main() {
                 }
             )
         } else if (buttonState === 'polygon-button') {
-            // add polygon
+            console.log(done);
+            if (!done) {
+                if (coordList.length > 3) {
+                    var pts = {x: xCoor, y: yCoor};
+                    console.log(euclideanDistance(pts, coordList[0]));
+                    if (euclideanDistance(pts, coordList[0]) < 0.025) {
+                        done = true;
+                        objects.push({
+                            vertices: triangulizePolygon(coordList),
+                            mode: gl.TRIANGLES,
+                            color: currColor
+                        });
+                    }
+                    else {
+                        coordList.push(pts);
+                    }
+                }
+                else {
+                    coordList.push(pts);
+                }
+            }
         }
 
         if (buttonState !== 'none') {
