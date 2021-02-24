@@ -46,7 +46,7 @@ function main() {
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    // TODO : load, compile, and link shaders
+    // Load, compile, and link shaders
     var vertSrc = `precision mediump float;
     
     attribute vec2 vertPos;
@@ -94,12 +94,13 @@ function main() {
         return;
     }
 
-    // TODO : set event listener
+    // Set canvas event listener
     canvas.addEventListener('mousemove', canvasOnMouseMove);
     canvas.addEventListener('click', canvasOnClick);
     canvas.addEventListener('mousedown', canvasOnMouseDown);
     canvas.addEventListener('mouseup', canvasOnMouseUp);
 
+    // Set slider event listener
     let slider = document.getElementById('square-slider');
     slider.addEventListener('input', function() {
         document.getElementById('value-tester').innerText = slider.value;
@@ -121,7 +122,6 @@ function main() {
                     0.0, 1.0, 0.0,
                     activeObject.midPoint[0], activeObject.midPoint[1], 1.0
                 ];
-                activeObject.k = newK;
                 activeObject.transToOrigin = translateToOrigin;
                 activeObject.scaleMat = scaleMat;
                 activeObject.transBack = translateBack;
@@ -129,21 +129,14 @@ function main() {
         }
     });
 
-    // Initialize uniforms
+    // Initialize canvas resolution
     gl.useProgram(program);
     let resLocation = gl.getUniformLocation(program, 'screenRes');
     gl.uniform2fv(resLocation, [gl.canvas.width, gl.canvas.height]);
 
-    console.log(
-        matrixTranspose([
-            1, 2, 3,
-            4, 5, 6,
-            7, 8, 9
-        ])
-    );
-
     requestAnimationFrame(render);
 
+    // Canvas Event listener functions
     function canvasOnMouseMove(event) {
         let rect = canvas.getBoundingClientRect();
         let xMax = gl.canvas.width / 2;
@@ -162,7 +155,6 @@ function main() {
                         mousePos.x, mousePos.y,
                         mousePos.x + gl.canvas.width/8, mousePos.y
                     ],
-                    k: 1,
                     scaleMat: [
                         1.0, 0, 0,
                         0, 1.0, 0,
@@ -194,7 +186,6 @@ function main() {
                         mousePos.x + gl.canvas.width/8, mousePos.y - gl.canvas.width/8,
                         mousePos.x, mousePos.y - gl.canvas.width/8
                     ],
-                    k: 1.0,
                     scaleMat: [
                         1.0, 0, 0,
                         0, 1.0, 0,
@@ -226,6 +217,7 @@ function main() {
         activeObject = null;
         isMove = false;
         chosenIdx = -1;
+        document.getElementById("scale-box").style.display = 'none';
         for (object of objects) {
             oldVertices = [];
             oldMidPoint = [];
@@ -252,8 +244,19 @@ function main() {
             if (isMove)
                 break;
         }
+
+        if (isMove) {
+            if (activeObject.type === 'square') {
+                document.getElementById("scale-box").style.display = 'inline';
+            }
+        }
     }
 
+    function canvasOnMouseUp(event) {
+        isMove = false;
+    }
+
+    // Matrix related functions
     function matrixTranspose(mat) {
         let copyMat = [];
         for (elmt of mat) {
@@ -306,37 +309,6 @@ function main() {
         return tempVertice;
     }
 
-    function canvasOnMouseUp(event) {
-        isMove = false;
-    }
-
-    function drawObject(object, program) {
-        let buf = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(object.vertices), gl.STATIC_DRAW);
-
-        gl.useProgram(program);
-        let pos = gl.getAttribLocation(program, 'vertPos');
-        gl.vertexAttribPointer(
-            pos,
-            2,
-            gl.FLOAT,
-            gl.FALSE,
-            2 * Float32Array.BYTES_PER_ELEMENT,
-            0
-        );
-        gl.enableVertexAttribArray(pos);
-
-        let matLocation = gl.getUniformLocation(program, 'transToOrigin');
-        gl.uniformMatrix3fv(matLocation, false, new Float32Array(object.transToOrigin));
-        matLocation = gl.getUniformLocation(program, 'scaleMat');
-        gl.uniformMatrix3fv(matLocation, false, new Float32Array(object.scaleMat));
-        matLocation = gl.getUniformLocation(program, 'transBack');
-        gl.uniformMatrix3fv(matLocation, false, new Float32Array(object.transBack));
-
-        gl.drawArrays(object.mode, 0, object.vertices.length/2);
-    }
-
     function moveObject() {
         if (isMove) {
             let xTrans = mousePos.x - startX;
@@ -368,6 +340,34 @@ function main() {
                 }
             }
         }
+    }
+
+    // Render related functions
+    function drawObject(object, program) {
+        let buf = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(object.vertices), gl.STATIC_DRAW);
+
+        gl.useProgram(program);
+        let pos = gl.getAttribLocation(program, 'vertPos');
+        gl.vertexAttribPointer(
+            pos,
+            2,
+            gl.FLOAT,
+            gl.FALSE,
+            2 * Float32Array.BYTES_PER_ELEMENT,
+            0
+        );
+        gl.enableVertexAttribArray(pos);
+
+        let matLocation = gl.getUniformLocation(program, 'transToOrigin');
+        gl.uniformMatrix3fv(matLocation, false, new Float32Array(object.transToOrigin));
+        matLocation = gl.getUniformLocation(program, 'scaleMat');
+        gl.uniformMatrix3fv(matLocation, false, new Float32Array(object.scaleMat));
+        matLocation = gl.getUniformLocation(program, 'transBack');
+        gl.uniformMatrix3fv(matLocation, false, new Float32Array(object.transBack));
+
+        gl.drawArrays(object.mode, 0, object.vertices.length/2);
     }
 
     function render() {
