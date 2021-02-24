@@ -38,6 +38,17 @@ function main() {
     var objects = [];
     var coordList = [];
     var done = false;
+    var activeObject = null;
+    var startX = 0;
+    var startY = 0;
+    var isMove = false;
+    var oldVertices = [];
+    var oldMidPoint = []; // only for square
+    var chosenIdx = -1;
+    var mousePos = {
+        x: 0,
+        y: 0
+    }
 
     var buttonIds = [
         'line-button',
@@ -146,13 +157,19 @@ function main() {
     gl.clearColor(1.0, 1.0, 1.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    // TODO : load, compile, and link shaders
+    // Load, compile, and link shaders
     var vertSrc = `precision mediump float;
     
     attribute vec2 vertPos;
+    uniform vec2 screenRes;
+    uniform mat3 transToOrigin;
+    uniform mat3 scaleMat;
+    uniform mat3 transBack;
 
     void main() {
-        gl_Position = vec4(vertPos, 0.0, 1.0);
+        vec3 transResult = transBack * scaleMat * transToOrigin * vec3(vertPos, 1.0);
+        vec2 newPos = 2.0*transResult.xy/screenRes;
+        gl_Position = vec4(newPos, 0.0, 1.0);
     }`;
 
     var fragSrc = `precision mediump float;
@@ -189,24 +206,81 @@ function main() {
         return;
     }
 
-    // TODO : set event listener
-    canvas.addEventListener('click', function(event) {
-        var rect = canvas.getBoundingClientRect();
-        var xMax = canvas.width / 2;
-        var xCoor = (event.clientX - rect.x - xMax) / xMax;
+    // Set canvas event listener
+    canvas.addEventListener('mousemove', canvasOnMouseMove);
+    canvas.addEventListener('click', canvasOnClick);
+    canvas.addEventListener('mousedown', canvasOnMouseDown);
+    canvas.addEventListener('mouseup', canvasOnMouseUp);
 
-        var yMax = canvas.height / 2;
-        var yCoor = (-1*(event.clientY - rect.y) + yMax) / yMax;
+    // Set slider event listener
+    let slider = document.getElementById('square-slider');
+    slider.addEventListener('input', function() {
+        if (activeObject) {
+            if (activeObject.type === 'square') {
+                const newK = 0.1 * slider.value;
+                let translateToOrigin = [
+                    1.0, 0.0, 0.0,
+                    0.0, 1.0, 0.0,
+                    -activeObject.midPoint[0], -activeObject.midPoint[1], 1.0
+                ];
+                let scaleMat = [
+                    newK, 0.0, 0.0,
+                    0.0, newK, 0.0, 
+                    0.0, 0.0, 1.0
+                ];
+                let translateBack = [
+                    1.0, 0.0, 0.0,
+                    0.0, 1.0, 0.0,
+                    activeObject.midPoint[0], activeObject.midPoint[1], 1.0
+                ];
+                activeObject.transToOrigin = translateToOrigin;
+                activeObject.scaleMat = scaleMat;
+                activeObject.transBack = translateBack;
+            }
+        }
+    });
 
-        console.log('xCoor:', xCoor);
-        console.log('yCoor:', yCoor);
-        
+    // Initialize canvas resolution
+    gl.useProgram(program);
+    let resLocation = gl.getUniformLocation(program, 'screenRes');
+    gl.uniform2fv(resLocation, [gl.canvas.width, gl.canvas.height]);
+
+    requestAnimationFrame(render);
+
+    // Canvas Event listener functions
+    function canvasOnMouseMove(event) {
+        let rect = canvas.getBoundingClientRect();
+        let xMax = gl.canvas.width / 2;
+        let yMax = gl.canvas.height / 2;
+
+        mousePos.x = event.clientX - rect.x - xMax;
+        mousePos.y = rect.y - event.clientY + yMax;
+    }
+
+    function canvasOnClick(event) {
+        let rect = canvas.getBoundingClientRect();
         if (buttonState === 'line-button') {
             objects.push(
                 {
+                    type: 'line',
                     vertices: [
-                        xCoor, yCoor,
-                        xCoor + 0.25, yCoor
+                        mousePos.x, mousePos.y,
+                        mousePos.x + gl.canvas.width/8, mousePos.y
+                    ],
+                    scaleMat: [
+                        1.0, 0, 0,
+                        0, 1.0, 0,
+                        0, 0, 1.0
+                    ],
+                    transToOrigin: [
+                        1.0, 0, 0,
+                        0, 1.0, 0,
+                        0, 0, 1.0
+                    ],
+                    transBack: [
+                        1.0, 0, 0,
+                        0, 1.0, 0,
+                        0, 0, 1.0
                     ],
                     mode: gl.LINES,
                     color: currColor,
@@ -218,27 +292,42 @@ function main() {
         } else if (buttonState === 'square-button') {
             objects.push(
                 {
+                    midPoint: [mousePos.x + gl.canvas.width/16, mousePos.y - gl.canvas.height/16],
                     vertices: [
-                        xCoor, yCoor,
-                        xCoor + 0.25, yCoor,
-                        xCoor + 0.25, yCoor - 0.25,
-                        xCoor, yCoor,
-                        xCoor + 0.25, yCoor - 0.25,
-                        xCoor, yCoor - 0.25
+                        mousePos.x, mousePos.y,
+                        mousePos.x + gl.canvas.width/8, mousePos.y,
+                        mousePos.x + gl.canvas.width/8, mousePos.y - gl.canvas.width/8,
+                        mousePos.x, mousePos.y,
+                        mousePos.x + gl.canvas.width/8, mousePos.y - gl.canvas.width/8,
+                        mousePos.x, mousePos.y - gl.canvas.width/8
+                    ],
+                    scaleMat: [
+                        1.0, 0, 0,
+                        0, 1.0, 0,
+                        0, 0, 1.0
+                    ],
+                    transToOrigin: [
+                        1.0, 0, 0,
+                        0, 1.0, 0,
+                        0, 0, 1.0
+                    ],
+                    transBack: [
+                        1.0, 0, 0,
+                        0, 1.0, 0,
+                        0, 0, 1.0
                     ],
                     mode: gl.TRIANGLES,
                     color: currColor,
                     type: 'square',
                     id: 1,
                     originColor: currColor
-                }
-            )
+                });
         } else if (buttonState === 'polygon-button') {
             console.log(done);
             if (!done) {
                 if (coordList.length > 3) {
-                    console.log(euclideanDistance({x: xCoor, y: yCoor}, coordList[0]));
-                    if (euclideanDistance({x: xCoor, y: yCoor}, coordList[0]) < 0.025) {
+                    console.log(euclideanDistance({x: mousePos.x, y: mousePos.y}, coordList[0]));
+                    if (euclideanDistance({x: mousePos.x, y: mousePos.y}, coordList[0]) < 5) {
                         done = true;
                         objects.push({
                             vertices: triangulizePolygon(coordList),
@@ -246,16 +335,31 @@ function main() {
                             color: currColor,
                             type: 'polygon',
                             id: getID(currColor),
-                            originColor: currColor
+                            originColor: currColor,
+                            scaleMat: [
+                                1.0, 0, 0,
+                                0, 1.0, 0,
+                                0, 0, 1.0
+                            ],
+                            transToOrigin: [
+                                1.0, 0, 0,
+                                0, 1.0, 0,
+                                0, 0, 1.0
+                            ],
+                            transBack: [
+                                1.0, 0, 0,
+                                0, 1.0, 0,
+                                0, 0, 1.0
+                            ]
                         });
                         coordList = [];
                     }
                     else {
-                        coordList.push({x: xCoor, y: yCoor});
+                        coordList.push({x: mousePos.x, y: mousePos.y});
                     }
                 }
                 else {
-                    coordList.push({x: xCoor, y: yCoor});
+                    coordList.push({x: mousePos.x, y: mousePos.y});
                 }
             }
         }
@@ -297,17 +401,145 @@ function main() {
                 }
             }
         }
-    });
+    }
 
-    requestAnimationFrame(render);
+    function canvasOnMouseDown(event) {
+        activeObject = null;
+        isMove = false;
+        chosenIdx = -1;
+        document.getElementById("scale-box").style.display = 'none';
+        for (object of objects) {
+            oldVertices = [];
+            oldMidPoint = [];
+            for (let i = 0; i < object.vertices.length; i += 2) {
+                let mat = matrixMultiplication(
+                    matrixTranspose(object.transBack), 
+                    matrixMultiplication(matrixTranspose(object.scaleMat), matrixTranspose(object.transToOrigin))
+                );
+                let transformedVertice = transform(mat, [object.vertices[i], object.vertices[i + 1], 1.0])
+                oldVertices.push(object.vertices[i]);
+                oldVertices.push(object.vertices[i + 1]);
+                if (Math.abs(transformedVertice[0] - mousePos.x) < 5 && Math.abs(transformedVertice[1] - mousePos.y) < 5) {
+                    isMove = true;
+                    activeObject = object;
+                    startX = mousePos.x;
+                    startY = mousePos.y;
+                    chosenIdx = i;
+                    if (object.type === 'square') {
+                        oldMidPoint.push(object.midPoint[0]);
+                        oldMidPoint.push(object.midPoint[1]);
+                    }
+                }
+            }
+            if (isMove)
+                break;
+        }
 
+        if (isMove) {
+            if (activeObject.type === 'square') {
+                document.getElementById("scale-box").style.display = 'inline';
+            }
+        }
+    }
+
+    function canvasOnMouseUp(event) {
+        isMove = false;
+    }
+
+    // Matrix related functions
+    function matrixTranspose(mat) {
+        let copyMat = [];
+        for (elmt of mat) {
+            copyMat.push(elmt);
+        }
+
+        for (let i = 0; i < 3; i++) {
+            for (let j = i; j < 3; j++) {
+                let temp = copyMat[3*i + j];
+                copyMat[3*i + j] = copyMat[3*j + i];
+                copyMat[3*j + i] = temp;
+            }
+        }
+
+        return copyMat;
+    }
+
+    function matrixMultiplication(matA, matB) {
+
+        if (matA.length != matB.length) {
+            return;
+        }
+    
+        let outputMat = [];
+        let matLength = 3;
+        for (let i = 0; i < matLength; i++) {
+            for (let j = 0; j < matLength; j++) {
+                let sum = 0;
+                for (let k = 0; k < matLength; k++) {
+                    sum += matA[i*matLength + k] * matB[k*matLength + j];
+                }
+                outputMat.push(sum);
+            }
+        }
+    
+        return outputMat;
+    }
+
+    function transform(mat, vertice) {
+        let tempVertice = [];
+        let n = vertice.length;
+        for (let i = 0; i < n; i++) {
+            let sum = 0.0;
+            for (let j = 0; j < n; j++) {
+                sum += (mat[i*n + j] * vertice[j]);
+            }
+            tempVertice.push(sum);
+        }
+
+        return tempVertice;
+    }
+
+    function moveObject() {
+        if (isMove) {
+            let xTrans = mousePos.x - startX;
+            let yTrans = mousePos.y - startY;
+            if (activeObject.type === 'line') {
+                activeObject.vertices[chosenIdx] = oldVertices[chosenIdx] + xTrans;
+                activeObject.vertices[chosenIdx + 1] = oldVertices[chosenIdx + 1] + yTrans;
+            } else {
+                for (let i = 0; i < activeObject.vertices.length; i += 2) {
+                    activeObject.vertices[i] = oldVertices[i] + xTrans;
+                    activeObject.vertices[i + 1] = oldVertices[i + 1] + yTrans;
+                }
+
+                if (activeObject.type === 'square') {
+                    activeObject.midPoint[0] = oldMidPoint[0] + xTrans;
+                    activeObject.midPoint[1] = oldMidPoint[1] + yTrans;
+                    let translateToOrigin = [
+                        1.0, 0.0, 0.0,
+                        0.0, 1.0, 0.0,
+                        -activeObject.midPoint[0], -activeObject.midPoint[1], 1.0
+                    ];
+                    let translateBack = [
+                        1.0, 0.0, 0.0,
+                        0.0, 1.0, 0.0,
+                        activeObject.midPoint[0], activeObject.midPoint[1], 1.0
+                    ];
+                    activeObject.transToOrigin = translateToOrigin;
+                    activeObject.transBack = translateBack;
+                }
+            }
+        }
+    }
+
+    // Render related functions
     function drawObject(object, program) {
-        var buf = gl.createBuffer();
+        let buf = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, buf);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(object.vertices), gl.STATIC_DRAW);
 
         gl.useProgram(program);
-        var pos = gl.getAttribLocation(program, 'vertPos');
+        let pos = gl.getAttribLocation(program, 'vertPos');
         gl.vertexAttribPointer(
             pos,
             2,
@@ -320,10 +552,19 @@ function main() {
         var uniformCol = gl.getUniformLocation(program, 'u_fragColor')
         gl.uniform4fv(uniformCol, object.color);
         gl.enableVertexAttribArray(pos);
+
+        let matLocation = gl.getUniformLocation(program, 'transToOrigin');
+        gl.uniformMatrix3fv(matLocation, false, new Float32Array(object.transToOrigin));
+        matLocation = gl.getUniformLocation(program, 'scaleMat');
+        gl.uniformMatrix3fv(matLocation, false, new Float32Array(object.scaleMat));
+        matLocation = gl.getUniformLocation(program, 'transBack');
+        gl.uniformMatrix3fv(matLocation, false, new Float32Array(object.transBack));
+
         gl.drawArrays(object.mode, 0, object.vertices.length/2);
     }
 
     function render() {
+        moveObject();
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         gl.useProgram(program);
         gl.bindFramebuffer(gl.FRAMEBUFFER, null)
