@@ -29,8 +29,7 @@ function main() {
 
     var buttonIds = [
         'line-button',
-        'square-button',
-        'polygon-button'
+        'square-button'
     ];
 
     var buttonState = 'none';
@@ -44,6 +43,16 @@ function main() {
             }
             buttonState = id;
         });
+    });
+
+    var polybutton = document.getElementById('polygon-button');
+    polybutton.addEventListener('click', function(event) {
+        polybutton.disabled = true;
+        if (done) {
+            polybutton.disabled = false;
+            done = false;
+        }
+        buttonState = 'polygon-button';
     });
 
     function euclideanDistance(p1, p2) {
@@ -81,6 +90,7 @@ function main() {
                 for (i = 0; i < coordList.length; i++) {
                     if (coordList[i].x == temp.coord.x && coordList[i].y == temp.coord.y) {
                         coordList.splice(i, 1);
+                        len = coordList.length;
                     }
                 }
                 for (i = 0; i < coordList.length; i++) {
@@ -209,29 +219,36 @@ function main() {
             console.log(done);
             if (!done) {
                 if (coordList.length > 3) {
-                    var pts = {x: xCoor, y: yCoor};
-                    console.log(euclideanDistance(pts, coordList[0]));
-                    if (euclideanDistance(pts, coordList[0]) < 0.025) {
+                    console.log(euclideanDistance({x: xCoor, y: yCoor}, coordList[0]));
+                    if (euclideanDistance({x: xCoor, y: yCoor}, coordList[0]) < 0.025) {
                         done = true;
                         objects.push({
                             vertices: triangulizePolygon(coordList),
                             mode: gl.TRIANGLES,
                             color: currColor
                         });
+                        coordList = [];
                     }
                     else {
-                        coordList.push(pts);
+                        coordList.push({x: xCoor, y: yCoor});
                     }
                 }
                 else {
-                    coordList.push(pts);
+                    coordList.push({x: xCoor, y: yCoor});
                 }
             }
         }
-
         if (buttonState !== 'none') {
-            document.getElementById(buttonState).disabled = false;
-            buttonState = 'none';
+            if (buttonState !== 'polygon-button') {
+                document.getElementById(buttonState).disabled = false;
+                buttonState = 'none';
+            }
+            else {
+                if (done) {
+                    document.getElementById(buttonState).disabled = false;
+                    buttonState = 'none';
+                }
+            }
         }
     });
 
