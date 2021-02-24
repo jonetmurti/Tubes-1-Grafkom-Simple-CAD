@@ -1,4 +1,5 @@
 var currColor = [1.0, 0.0, 0.0, 1.0];
+var selected = null;
 
 function changeColor() {
     var temp = document.getElementById('color').value;
@@ -20,6 +21,17 @@ function changeColor() {
     else if (temp === 'yellow') {
         currColor = [1.0, 1.0, 0.0, 1.0];
     }
+    else if (temp === 'black') {
+        currColor = [0.0, 0.0, 0.0, 1.0];
+    }
+    if (selected !== null && selected.type === 'polygon') {
+        selected.color = currColor;
+        selected.id = getID(currColor);
+    }
+}
+
+function getID(color) {
+    return (color[0] * 255) + ((color[1] * 255) << 8) + ((color[2] * 255) << 16) + ((color[3] * 255) << 24);
 }
 
 function main() {
@@ -124,7 +136,7 @@ function main() {
     canvas.width = 600;
     canvas.height = 600;
 
-    var gl = canvas.getContext('webgl');
+    var gl = canvas.getContext('webgl', {preserveDrawingBuffer: true});
 
     if (!gl) {
         alert('Your browser does not support webgl');
@@ -197,7 +209,10 @@ function main() {
                         xCoor + 0.25, yCoor
                     ],
                     mode: gl.LINES,
-                    color: currColor
+                    color: currColor,
+                    type: 'line',
+                    id: 0,
+                    originColor: currColor
                 }
             )
         } else if (buttonState === 'square-button') {
@@ -212,7 +227,10 @@ function main() {
                         xCoor, yCoor - 0.25
                     ],
                     mode: gl.TRIANGLES,
-                    color: currColor
+                    color: currColor,
+                    type: 'square',
+                    id: 1,
+                    originColor: currColor
                 }
             )
         } else if (buttonState === 'polygon-button') {
@@ -225,7 +243,10 @@ function main() {
                         objects.push({
                             vertices: triangulizePolygon(coordList),
                             mode: gl.TRIANGLES,
-                            color: currColor
+                            color: currColor,
+                            type: 'polygon',
+                            id: getID(currColor),
+                            originColor: currColor
                         });
                         coordList = [];
                     }
@@ -238,6 +259,32 @@ function main() {
                 }
             }
         }
+        else if (buttonState === 'none') {
+            const pixelX = (event.clientX - rect.left) * gl.canvas.width / canvas.clientWidth;
+            const pixelY = gl.canvas.height - (event.clientY - rect.top) * gl.canvas.height / canvas.clientHeight - 1;
+            var data = new Uint8Array(4);
+            gl.readPixels(pixelX, pixelY, 1,1, gl.RGBA, gl.UNSIGNED_BYTE, data);
+            const id = data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24);
+            console.log(id);
+            if (id !== 0) {
+                for (i = 0; i < objects.length; i++) {
+                    console.log(objects[i].id);
+                    if (objects[i].id === id && selected === null) {
+                        selected = objects[i];
+                        console.log("Polygon " + selected.id + " selected");
+                        break;
+                    }
+                    else if (objects[i].id === id && selected !== null) {
+                        selected = objects[i];
+                        console.log("Polygon " + selected.id + " selected");
+                    }
+                }
+            }
+            else {
+                selected = null;
+            }
+        }
+        console.log(buttonState);
         if (buttonState !== 'none') {
             if (buttonState !== 'polygon-button') {
                 document.getElementById(buttonState).disabled = false;
@@ -279,6 +326,7 @@ function main() {
     function render() {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         gl.useProgram(program);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null)
         for (object of objects) {
             drawObject(object, program);
         }
