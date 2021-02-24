@@ -1,5 +1,16 @@
 function main() {
     var objects = [];
+    var activeObject = null;
+    var id = 0;
+    var startX = 0;
+    var startY = 0;
+    var isMove = false;
+    var oldVertices = [];
+    var chosenIdx = -1;
+    var mousePos = {
+        x: 0,
+        y: 0
+    }
 
     var buttonIds = [
         'line-button',
@@ -39,9 +50,11 @@ function main() {
     var vertSrc = `precision mediump float;
     
     attribute vec2 vertPos;
+    uniform vec2 screenRes;
 
     void main() {
-        gl_Position = vec4(vertPos, 0.0, 1.0);
+        vec2 newPos = 2.0*vertPos/screenRes;
+        gl_Position = vec4(newPos, 0.0, 1.0);
     }`;
 
     var fragSrc = `precision mediump float;
@@ -78,27 +91,47 @@ function main() {
     }
 
     // TODO : set event listener
-    canvas.addEventListener('click', function(event) {
+    canvas.addEventListener('mousemove', canvasOnMouseMove);
+    canvas.addEventListener('click', canvasOnClick);
+    canvas.addEventListener('mousedown', canvasOnMouseDown);
+    canvas.addEventListener('mouseup', canvasOnMouseUp);
+
+    // Initialize uniforms
+    gl.useProgram(program);
+    let resLocation = gl.getUniformLocation(program, 'screenRes');
+    gl.uniform2fv(resLocation, [gl.canvas.width, gl.canvas.height]);
+
+    requestAnimationFrame(render);
+
+    function canvasOnMouseMove(event) {
         var rect = canvas.getBoundingClientRect();
-        var xMax = canvas.width / 2;
-        var xCoor = (event.clientX - rect.x - xMax) / xMax;
+        var xMax = gl.canvas.width / 2;
+        var yMax = gl.canvas.height / 2;
 
-        var yMax = canvas.height / 2;
-        var yCoor = (-1*(event.clientY - rect.y) + yMax) / yMax;
+        mousePos.x = event.clientX - rect.x - xMax;
+        mousePos.y = rect.y - event.clientY + yMax;
+    }
 
-        console.log('xCoor:', xCoor);
-        console.log('yCoor:', yCoor);
-        
+    function canvasOnClick(event) {
         if (buttonState === 'line-button') {
             objects.push(
                 {
+                    type: 'line',
                     vertices: [
-                        xCoor, yCoor,
-                        xCoor + 0.25, yCoor
+                        mousePos.x, mousePos.y,
+                        mousePos.x + gl.canvas.width/8, mousePos.y
+                    ],
+                    k: 1,
+                    scaleMat: [
+                        1.0, 0, 0,
+                        0, 1.0, 0,
+                        0, 0, 1.0
                     ],
                     mode: gl.LINES
                 }
             )
+            console.log(objects);
+            id++;
         } else if (buttonState === 'square-button') {
             // add square
         } else if (buttonState === 'polygon-button') {
@@ -109,9 +142,49 @@ function main() {
             document.getElementById(buttonState).disabled = false;
             buttonState = 'none';
         }
-    });
+    }
 
-    requestAnimationFrame(render);
+    function canvasOnMouseDown(event) {
+        activeObject = null;
+        isMove = false;
+        for (object of objects) {
+            oldVertices = [];
+            for (let i = 0; i < object.vertices.length; i += 2) {
+                let transformedVertice = transform(object.scaleMat, [object.vertices[i], object.vertices[i + 1], 1.0])
+                oldVertices.push(object.vertices[i]);
+                oldVertices.push(object.vertices[i + 1]);
+                if (Math.abs(transformedVertice[0] - mousePos.x) < 5 && Math.abs(transformedVertice[1] - mousePos.y) < 5) {
+                    isMove = true;
+                    activeObject = object;
+                    startX = mousePos.x;
+                    startY = mousePos.y;
+                    chosenIdx = i;
+                }
+            }
+            if (isMove)
+                break;
+        }
+    }
+
+    function transform(mat, vertice) {
+        let tempVertice = [];
+        let n = vertice.length;
+        for (let i = 0; i < n; i++) {
+            let sum = 0.0;
+            for (let j = 0; j < n; j++) {
+                sum += (mat[i*n + j] * vertice[j]);
+            }
+            tempVertice.push(sum);
+        }
+
+        return tempVertice;
+    }
+
+    function canvasOnMouseUp(event) {
+        document.getElementById('mouse-button').innerText = 'lepas';
+        isMove = false;
+        chosenIdx = -1;
+    }
 
     function drawObject(object, program) {
         var buf = gl.createBuffer();
@@ -132,9 +205,26 @@ function main() {
         gl.drawArrays(object.mode, 0, object.vertices.length/2);
     }
 
+    function moveObject() {
+        if (isMove) {
+            console.log('moving');
+            let xTrans = mousePos.x - startX;
+            let yTrans = mousePos.y - startY;
+            if (activeObject.type === 'line') {
+                activeObject.vertices[chosenIdx] = oldVertices[chosenIdx] + xTrans;
+                activeObject.vertices[chosenIdx + 1] = oldVertices[chosenIdx + 1] + yTrans;
+            } else {
+                for (let i = 0; i < activeObject.vertices.length; i += 2) {
+                    activeObject.vertices[i] = oldVertices[i] + xTrans;
+                    activeObject.vertices[i + 1] = oldVertices[i + 1] + yTrans;
+                }
+            }
+        }
+    }
+
     function render() {
+        moveObject();
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        gl.useProgram(program);
         for (object of objects) {
             drawObject(object, program);
         }
