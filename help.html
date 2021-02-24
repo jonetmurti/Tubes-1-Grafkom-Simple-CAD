@@ -1,0 +1,86 @@
+<html lang="en">
+    <head>
+        <title>Simple CAD - Help</title>
+        <style>
+            h1 {text-align: center;}
+        </style>
+    </head>
+    <body>
+        <h1>Simple CAD</h1>
+        <h2>Gambar Garis</h2>
+        <p>Fungsionalitas ini membuat pengguna dapat menggambar garis dan mengubah panjang garis pada layar. Berikut adalah langkah-langkah untuk menggambar garis.</p>
+        <ul>
+            <li>Pilih warna yang diinginkan untuk garis dari warna-warna yang tersedia pada layar</li>
+            <li>Klik tombol “Line” pada layar (hal ini akan membuat tombol menjadi inactive)</li>
+            <li>Klik bagian manapun dari canvas dengan tombol kiri mouse</li>
+            <li>Garis akan muncul dengan panjang awal lebar canvas dibagi 8 dan sudut 0 derajat terhadap sumbu x.</li>
+        </ul>
+        <p>Untuk mengubah panjang garis, berikut ini adalah langkah-langkah untuk mengubah panjang garis</p>
+        <ul>
+            <li>Tekan dan tahan tombol kiri mouse pada salah satu titik pada garis</li>
+            <li>Geser mouse ke bagian manapun pada canvas</li>
+            <li>Garis akan berubah-ubah panjangnya karena simpul yang ditahan berubah posisi</li>
+            <li>Untuk menghentikan pemanjangan garis, lepas tombol mouse yang ditekan.</li>
+        </ul>
+        <h2>Menggambar Persegi</h2>
+        <p>Fungsionalitas ini membuat pengguna dapat menggambar persegi, mengubah posisi persegi pada layar, dan mengubah ukuran sisi persegi. Berikut adalah langkah-langkah untuk menggambar persegi.</p>
+        <ul>
+            <li>Pilih warna yang diinginkan untuk persegi dari warna-warna yang tersedia pada layar</li>
+            <li>Klik tombol “Square” pada layar (hal ini akan membuat tombol menjadi inactive)</li>
+            <li>Klik bagian manapun dari canvas dengan tombol kiri mouse</li>
+            <li>Persegi akan muncul dengan panjang sisi awal sama dengan lebar canvas dibagi 8.</li>
+        </ul>
+        <p>Untuk mengubah posisi persegi pada layar, berikut ini adalah langkah-langkah untuk mengubah posisi persegi pada layar.</p>
+        <ul>
+            <li>Tekan dan tahan tombol kiri mouse pada salah satu titik pada persegi</li>
+            <li>Geser mouse ke bagian manapun pada canvas</li>
+            <li>Persegi akan berubah posisinya mengikuti gerakan mouse</li>
+            <li>Untuk menghentikan perubahan posisi persegi, lepas tombol mouse yang ditekan.</li>
+        </ul>
+        <p>Untuk mengubah ukuran persegi pada layar, berikut ini adalah langkah-langkan untuk mengubah ukuran persegi yang ada pada layar.</p>
+        <ul>
+            <li>Tekan tombol kiri mouse pada salah satu titik pada persegi</li>
+            <li>Pada bagian kanan atas canvas akan muncul slider yang dapat digeser</li>
+            <li>Menggeser slider akan mengubah scale dari persegi yang dipilih.</li>
+        </ul>
+        <h2>Menggambar Polygon</h2>
+        <p>Fungsionalitas ini membuat pengguna dapat menggambar polygon non convex dan mengubah posisi polygon pada layar. Berikut adalah langkah-langkah menggambar polygon pada layar.</p>
+        <ul>
+            <li>Pilih warna yang diinginkan untuk polygon dari warna-warna yang tersedia pada layar</li>
+            <li>Klik tombol “Polygon” pada layar (hal ini akan membuat tombol menjadi inactive)</li>
+            <li>Klik setidaknya tiga titik di lokasi yang diinginkan.</li>
+            <li>Apabila semua titik sudut yang membentuk polygon sudah dimasukkan, klik pada titik asal polygon untuk melengkapi gambar polygon.</li>
+        </ul>
+        <p>Untuk mengubah posisi polygon pada layar, berikut ini adalah langkah-langkah untuk mengubah posisi polygon pada layar</p>
+        <ul>
+            <li>Tekan dan tahan tombol kiri mouse pada salah satu titik pada polygon</li>
+            <li>Geser mouse ke bagian manapun pada canvas</li>
+            <li>Polygon akan berubah posisinya mengikuti gerakan mouse</li>
+            <li>Untuk menghentikan perubahan posisi polygon, lepas tombol mouse yang ditekan.</li>
+        </ul>
+        <h2>Mengubah Warna</h2>
+        <p>Fungsionalitas ini membuat pengguna dapat mengubah warna polygon yang telah dibentuk. Berikut adalah langkah-langkah mengubah warna polygon.</p>
+        <ul>
+            <li>Pilih salah satu polygon yang telah dibuat pada layar</li>
+            <li>Pilih warna yang ingin digunakan pada polygon dengan menu “Color”</li>
+            <li>Warna polygon akan berubah sesuai pilihan pengguna</li>
+        </ul>
+        <h2>Save Canvas</h2>
+        <p>Fungsionalitas ini membuat pengguna dapat menyimpan progres atau objek-objek yang telah digambar pada layar. Objek pada layar akan disimpan dalam sebuah file JSON yang dapat diunduh oleh pengguna. Berikut adalah langkah-langkah untuk save canvas.</p>
+        <ul>
+            <li>Gambar objek yang diinginkan pada layar menggunakan fitur-fitur yang telah disediakan</li>
+            <li>Klik tombol “Save” pada layar</li>
+            <li>Akan muncul pop-up untuk penamaan file (default: data)</li>
+            <li>Setelah penamaan file dilakukan maka akan muncul pop-up untuk mengunduh file tersebut.</li>
+            <li>Unduh file tersebut</li>
+        </ul>
+        <h2>Load Canvas</h2>
+        <p>Fungsionalitas ini membuat pengguna dapat melanjutkan progres atau objek-objek yang telah digambar sebelumnya. Pengguna hanya perlu mengunggah file JSON yang telah diunduh dari fitur save. Berikut adalah langkah-langkah untuk load canvas:</p>
+        <ul>
+            <li>Sediakan file JSON yang ingin diunggah</li>
+            <li>Klik tombol “Browse...” (Mozilla Firefox) atau “Choose File” (Google Chrome)</li>
+            <li>Pilih file JSON yang ingin diunggah</li>
+            <li>Objek-objek pada layar akan diupdate sesuai dengan objek yang berada pada file JSON</li>
+        </ul>
+    </body>
+</html>
